@@ -1,5 +1,5 @@
 {
-  "name": "raganork",
+  "name": "raganork", 
   "version": "2.0.1",
   "description": "Raganork whatsapp bot- Multi device version.",
   "main": "./Raganork/index.js",
@@ -27,6 +27,7 @@
     "@adiwajshing/keyed-db":"0.2.4",
     "acrcloud":"1.4.0",
     "string-crypto": "2.0.2",
+    "link-preview-js":"2.1.15",
     "mongodb": "^4.3.1",
     "node-webpmux": "^3.1.0",
     "node-cron": "3.0.1",

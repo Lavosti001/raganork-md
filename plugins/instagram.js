@@ -23,7 +23,8 @@ const {
     downloadGram,
     pin,
     story,
-    tiktok
+    tiktok,
+    fb
 } = require('./misc/misc');
 const Config = require('../config');
 const s = require('../config');
@@ -41,7 +42,7 @@ Module({
     use: 'download'
 }, (async (msg, query) => {
      var q = !msg.reply_message.message ? query[1] : msg.reply_message.message
-    if (q.startsWith('l')) return;
+     if (q && (q.startsWith('l') || q.includes('youtu'))) return;
     if (!q) return await msg.sendReply("*Need instagram link*")
     if (q.includes("stories")) return await msg.sendReply("*Use .story command!*")
     if (q && !q.includes('instagram.com')) return await msg.client.sendMessage(msg.jid, {
@@ -54,11 +55,27 @@ Module({
     if (url != null) {
         var res = await downloadGram(url[0])
         if (res == false) return await msg.sendReply("*Download failed*");
+        var quoted = msg.reply_message ? msg.quoted : msg.data
         for (var i in res) {
-        await msg.sendReply({url:res[i].url}, res[i].type)
+        await msg.client.sendMessage(msg.jid,{[res[i].includes("jpg")?'image':'video']:{url:res[i]}},{quoted})
         };
     }
 }));
+Module({
+    pattern: 'fb ?(.*)',
+    fromMe: sourav,
+    desc: 'Facebook video downloader',
+    usage: 'fb link or reply to a link',
+    use: 'download'
+}, (async (msg, query) => {
+     var q = !msg.reply_message.message ? query[1] : msg.reply_message.message
+     if (/\bhttps?:\/\/\S+/gi.test(q)) q = q.match(/\bhttps?:\/\/\S+/gi)[0]
+     if (!q) return await msg.sendReply("*Need fb link*")
+     var res = await fb(q);
+     var video = await skbuffer(res.link_high);
+     await msg.sendVideoTemplate(video,"*Facebook Downloader*","Click here to download HD video",
+     [{urlButton: {displayText: 'HD Video',url: res.link_normal}}])
+        }));
 Module({
     pattern: 'ig ?(.*)',
     fromMe: sourav,
@@ -66,6 +83,7 @@ Module({
     usage: 'ig username',
     use: 'search'
 }, (async (msg, query) => {
+    if (query[1] === 'dl') return; 
     if (query[1] === '') return await msg.client.sendMessage(msg.jid, {
         text: need_acc
     }, {
@@ -93,13 +111,32 @@ Module({
     use: 'download'
 }, (async (msg, query) => {
     var user = query[1] !== '' ? query[1] : msg.reply_message.text;
+    if (user && user.includes("/reel/") || user.includes("/tv/") || user.includes("/p/")) return;
     if (!user) return await msg.sendReply(need_acc_s);
     if (/\bhttps?:\/\/\S+/gi.test(user)) user = user.match(/\bhttps?:\/\/\S+/gi)[0]
-    try { var res = await story(user) } catch {return await msg.sendReply("*Server error*")}
-    await msg.sendMessage('_Downloading ' + res.length + ' stories_');
+    var unam = user.startsWith('https') ? user.split('/')[4] : user
+    try { var res = await story(user) } catch {return await msg.sendReply("*Sorry, server error*")}
+    var StoryData = []
+  
     for (var i in res){
-        await msg.sendReply({url: res[i].url},res[i].type)
-    }
+    StoryData.push({
+      title: "Story "+Math.floor(parseInt(i)+1),
+      description: "Type: "+res[i].type,
+      rowId: "igs "+msg.myjid+" "+user+" "+i
+  })
+  }
+  const sections = [{
+      title: "Click and send to download.",
+      rows: StoryData
+  }];
+  const listMessage = {
+      text: "_Account:_ "+unam,
+      footer: "_Total stories: " + res.length+"_",
+      title: "_Download your stories_",
+      buttonText: "View all",
+      sections
+  }
+  await msg.client.sendMessage(msg.jid, listMessage)
 }));
 Module({
     pattern: 'pin ?(.*)',
@@ -114,9 +151,10 @@ Module({
     if (/\bhttps?:\/\/\S+/gi.test(user)) user = user.match(/\bhttps?:\/\/\S+/gi)[0]
     try { var res = await pin(user) } catch {return await msg.sendReply("*Server error*")}
     await msg.sendMessage('_Downloading ' + res.data.length + ' medias_');
-    for (var i in res){
-        var type = res.data[i].url.includes("mp4") ? "video" : "image"
-        await msg.sendReply({url:res.data[i].url },type)
+    var quoted = msg.reply_message ? msg.quoted : msg.data
+    for (var i of res.data){
+        var type = i.url.includes("mp4") ? "video" : "image"
+        await msg.client.sendMessage(msg.jid,{[type]:{url:i.url }},{quoted})
     }
 }));
 Module({
@@ -147,6 +185,12 @@ Module({
         on: 'button',
         fromMe: sourav
     }, (async (msg) => {
+        if (msg.list && msg.list.startsWith("igs") && msg.list.split(" ").includes(msg.myjid)){
+            var username = msg.list.split(" ")[2];
+            var count = parseInt(msg.list.split(" ")[3]);
+            try { var res = await story(username) } catch {return await msg.sendReply("*Sorry, server error*")}
+            return await msg.sendReply({url: res[count].url},res[count].type)
+        }
         if (msg.button && msg.button.startsWith("tktk") && msg.button.includes(msg.myjid)){
         if (msg.button.includes("nowm")){
         return await msg.sendReply({url: msg.button.split(" ")[3]},'video')

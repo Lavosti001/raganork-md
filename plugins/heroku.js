@@ -52,7 +52,6 @@ Module({
 }, (async (message, match) => {
 
     await message.sendReply(Lang.RESTART_MSG)
-    console.log(baseURI);
     await heroku.delete(baseURI + '/dynos').catch(async (error) => {
         await message.sendMessage(error.message)
     });
@@ -101,10 +100,10 @@ Module({
             percentage = Math.round((quota_used / total_quota) * 100);
             remaining = total_quota - quota_used;
             await message.sendReply(
-                "Total: ```{}```\n\n".format(secondsToDhms(total_quota)) +
-                "Used: ```{}```\n".format(secondsToDhms(quota_used)) +
-                "Percent: ```{}```\n\n".format(percentage) +
-                "Remaining: ```{}```\n".format(secondsToDhms(remaining)))
+                "_Total: *{}*_\n".format(secondsToDhms(total_quota)) +
+                "_Used: *{}*_\n".format(secondsToDhms(quota_used)) +
+                "_Percent: *{}*_\n".format(percentage) +
+                "_Remaining: *{}*_\n".format(secondsToDhms(remaining)))
 
         }).catch(async (err) => {
             await message.sendMessage(error.message)
@@ -284,7 +283,13 @@ Module({
 Module({
     on: 'button',
     fromMe: true
-}, (async (message, match) => {
+}, (async (message) => {
+    if (message.button && message.button.startsWith("restart") && message.button.includes(message.myjid)) {
+        await message.sendReply("_Restarting_")
+        await heroku.delete(baseURI + '/dynos').catch(async (error) => {
+        await message.sendMessage(error.message)
+    });
+    }
     if (message.button && message.button.startsWith("public") && message.button.includes(message.myjid)) {
         await heroku.patch(baseURI + '/config-vars', {
             body: {
@@ -335,11 +340,6 @@ Module({
     if (Config.CHATBOT === 'on') {
         await chatBot(message, Config.BOT_NAME)
     }
-}));
-Module({
-    on: 'text',
-    fromMe: false
-}, (async (message, match) => {
     if (/\bhttps?:\/\/\S+/gi.test(message.message)){
     var db = await getAntilink();
     const jids = []
@@ -352,8 +352,9 @@ Module({
     allowed.split(",").map(e=> checker.push(message.message.includes(e)))
     if (!checker.includes(true)){
     if (!(await isAdmin(message,message.sender))) {
+    var usr = message.sender.includes(":") ? message.sender.split(":")[0]+"@s.whatsapp.net" : message.sender
     await message.sendReply("*Links aren't allowed!*");
-    await message.client.groupParticipantsUpdate(message.jid, [message.sender], "remove")
+    await message.client.groupParticipantsUpdate(message.jid, [usr], "remove")
     }
     }
     }

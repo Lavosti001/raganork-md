@@ -44,18 +44,23 @@ Module({
   var link = match[1].match(/\bhttps?:\/\/\S+/gi)
   if (link !== null && getID.test(link[0])) {
       var query = getID.exec(link[0]);
-          var {
-              url
-          } = await downloadYT(query[1]);
-          return await message.client.sendMessage(message.jid, {
-              audio: {
-                  url: url
-              },
+      var {
+        thumbnail,title,size
+    } = await downloadYT(query[1],'audio');
+    await message.sendImageTemplate({url: thumbnail},`*Downloading:* _${title}_`,`Size: ${size}`,[])
+    var song = await getSong(query[1]);
+      ffmpeg(song)
+     .save('./song.mp3')
+     .on('end', async () => {
+      var song = await addInfo('./song.mp3',title,BOT_INFO.split(";")[0],"Raganork metadata",await skbuffer(thumbnail))
+      return await message.client.sendMessage(message.jid, {
+              audio: song,
               mimetype: 'audio/mpeg'
           }, {
               quoted: message.data
           });
-      return;
+
+                });         return;
         }
   var myid = message.client.user.id.split("@")[0].split(":")[0]
   let sr = await searchYT(match[1]);
@@ -80,7 +85,7 @@ Module({
       buttonText: "Select song",
       sections
   }
-  await message.client.sendMessage(message.jid, listMessage)
+  await message.client.sendMessage(message.jid, listMessage,{quoted: message.data})
 }));
 Module({
   pattern: 'yts ?(.*)',
@@ -112,7 +117,7 @@ Module({
       buttonText: "Select a video",
       sections
   }
-  await message.client.sendMessage(message.jid, listMessage)
+  await message.client.sendMessage(message.jid, listMessage,{quoted: message.data})
 }));
 Module({
   on: 'button',
@@ -159,28 +164,44 @@ Module({
           },{quoted:message.data});
        }
   if (message.button && message.button.startsWith("ytsa") && message.button.includes(message.client.user.id.split("@")[0].split(":")[0])) {
-          var {
-              url
-          } = await downloadYT(message.button.split(";")[2]);
-          return await message.client.sendMessage(message.jid, {
-              audio: {
-                  url: url
-              },
-              mimetype: 'audio/mpeg'
-          }, {
-              quoted: message.data
-          });
-     }
-  if (message.list && message.list.startsWith("song") && message.list.includes(message.client.user.id.split("@")[0].split(":")[0])) {
-          var {
-              thumbnail,title,size
-          } = await downloadYT(message.list.split(";")[1],'audio');
-          await message.client.sendMessage(message.jid,{image: {url: thumbnail},caption:`*Downloading:* ${'```'+title+'```'} \n *Size:* ${'```'+size+'```'}`})
-          var song = await getSong(message.list.split(";")[1]);
+    var {
+        thumbnail,title,size
+    } = await downloadYT(message.button.split(";")[2],'audio');
+    await message.client.sendMessage(message.jid,{image: {url: thumbnail},caption:`*Downloading:* ${'```'+title+'```'} \n *Size:* ${'```'+size+'```'}`})
+    var song = await getSong(message.button.split(";")[2]);
           ffmpeg(song)
          .save('./song.mp3')
          .on('end', async () => {
           var song = await addInfo('./song.mp3',title,BOT_INFO.split(";")[0],"Raganork metadata",await skbuffer(thumbnail))
+          return await message.client.sendMessage(message.jid, {
+              audio: song,
+              mimetype: 'audio/mpeg'
+          }, {
+              quoted: message.data
+          });
+     })};
+  if (message.list && message.list.startsWith("song") && message.list.includes(message.client.user.id.split("@")[0].split(":")[0])) {
+          var {
+              thumbnail,title,size,url
+          } = await downloadYT(message.list.split(";")[1],'audio');
+          await message.sendImageTemplate({url: thumbnail},`*Downloading:* _${title}_`,`Size: ${size}`,[])
+          // Method 1: Via y2mate
+          if (url!== "http://app.y2mate.com/download"){
+          await fs.writeFileSync('./song.mp3',await skbuffer(url))
+          var song_data = await addInfo('./song.mp3',title,BOT_INFO.split(";")[0],"Raganork audio downloader",await skbuffer(thumbnail))
+          return await message.client.sendMessage(message.jid, {
+              audio:song_data,
+              mimetype: 'audio/mp4'
+          }, {
+              quoted: message.data
+          });  
+        }
+          // Method 2: Direct Download from YT
+          var song = await getSong(message.list.split(";")[1]);
+          ffmpeg(song)
+         .save('./song.mp3')
+         .on('end', async () => {
+          var song = await addInfo('./song.mp3',title,BOT_INFO.split(";")[0],"Raganork audio downloader",await skbuffer(thumbnail))
           return await message.client.sendMessage(message.jid, {
               audio:song,
               mimetype: 'audio/mp4'
