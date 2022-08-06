@@ -1,6 +1,6 @@
 {
-  "name": "raganork", 
-  "version": "2.0.1",
+  "name": "raganork-md", 
+  "version": "3.0.0",
   "description": "Raganork whatsapp bot- Multi device version.",
   "main": "./Raganork/index.js",
   "scripts": {
@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/souravkl11/raganork#readme",
   "dependencies": {
-    "@adiwajshing/baileys": "4.1.0",
+    "@adiwajshing/baileys": "4.3.0",
     "@adiwajshing/keyed-db":"0.2.4",
     "acrcloud":"1.4.0",
     "string-crypto": "2.0.2",
@@ -35,6 +35,6 @@
     "raganork-bot": "2.0.7",
     "sequelize": "^6.13.0",
     "sqlite3": "^5.0.0",
-    "supervisor": "^0.12.0"
-     }
+    "supervisor": "^0.12.0"  
+  }
 }
